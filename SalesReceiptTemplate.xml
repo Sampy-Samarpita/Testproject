@@ -1,0 +1,1243 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<POSLog xmlns="http://com.tcs.omnistore/receipt-engine">
+
+ 
+<section name="headermessage">
+	
+	
+ 
+<!-- Add tax details <row type="fill" fillchar="-" /> -->
+ 
+	
+ #if($customerInfo)
+	#if($customerInfo.name.salutation and !$customerInfo.name.salutation.isEmpty() and $customerInfo.name.firstName and !$customerInfo.name.firstName.isEmpty() and $customerInfo.name.lastName and !$customerInfo.name.lastName.isEmpty())
+		#set($fullName= $customerInfo.name.salutation + ' ' + $customerInfo.name.firstName + ' ' + $customerInfo.name.lastName)
+	#elseif((!$customerInfo.name.salutation or $customerInfo.name.salutation.isEmpty()) and $customerInfo.name.firstName and !$customerInfo.name.firstName.isEmpty() and $customerInfo.name.lastName and !$customerInfo.name.lastName.isEmpty())
+		#set($fullName=$customerInfo.name.firstName + ' ' + $customerInfo.name.lastName)
+	#elseif($customerInfo.name.salutation and !$customerInfo.name.salutation.isEmpty() and (!$customerInfo.name.firstName or $customerInfo.name.firstName.isEmpty()) and $customerInfo.name.lastName and !$customerInfo.name.lastName.isEmpty())
+		#set($fullName=$customerInfo.name.salutation + ' ' + $customerInfo.name.lastName)
+    #elseif($customerInfo.name.salutation and !$customerInfo.name.salutation.isEmpty() and $customerInfo.name.firstName and !$customerInfo.name.firstName.isEmpty() and (!$customerInfo.name.lastName or $customerInfo.name.lastName.isEmpty()))
+         #set($fullName=$customerInfo.name.salutation + ' ' + $customerInfo.name.firstName)
+	#elseif((!$customerInfo.name.salutation or $customerInfo.name.salutation.isEmpty()) and (!$customerInfo.name.firstName or $customerInfo.name.firstName.isEmpty()) and $customerInfo.name.lastName and !$customerInfo.name.lastName.isEmpty())
+         #set($fullName=$customerInfo.name.lastName)
+	#elseif(($customerInfo.name.salutation or $customerInfo.name.salutation.isEmpty()) and ($customerInfo.name.firstName or !$customerInfo.name.firstName.isEmpty()) and ($customerInfo.name.lastName and $customerInfo.name.lastName.isEmpty()))
+         #set($fullName=$customerInfo.name.firstName)
+	#elseif((!$customerInfo.name.salutation or  !$customerInfo.name.salutation.isEmpty()) and ($customerInfo.name.firstName and !$customerInfo.name.firstName.isEmpty()) and (!$customerInfo.name.lastName or $customerInfo.name.lastName.isEmpty()))
+         #set($fullName=$customerInfo.name.firstName)
+	
+	#end
+
+		#if($fullName and !$fullName.isEmpty())
+	    <row column-format="%">
+			<column align="left" column-width="100%">$posLogHelper.escapeXMLValue($fullName)</column>
+		</row>
+		#end
+		#set($company=$customerInfo.organization.name)
+		#if($company and !$company.isEmpty())
+		<row>
+			<column align="left">$posLogHelper.escapeXMLValue($company)</column>
+		</row>
+		#end
+		<!-- addressLine signifies addressLine 1 and stores House Name, addressLine 2 stores House Number  -->
+		#if($customerInfo.address.addressLine and !$customerInfo.address.addressLine.trim().isEmpty())
+			<row>
+				<column align="left">$posLogHelper.escapeXMLValue($customerInfo.address.addressLine)</column>
+			</row>
+		#elseif($customerInfo.address.addressLine1 and !$customerInfo.address.addressLine1.trim().isEmpty())
+			<row>
+				<column align="left">$posLogHelper.escapeXMLValue($customerInfo.address.addressLine1)</column>
+			</row>
+		#end
+		
+			#set($houseDetails = "")
+		#if($customerInfo.address.addressLine2 and !$customerInfo.address.addressLine2.isEmpty())
+			#set($houseDetails = $customerInfo.address.addressLine2 + ' ')	
+		#end
+		
+		#if($customerInfo.address.addressLine4 and !$customerInfo.address.addressLine4.isEmpty())
+			#set($houseDetails = $houseDetails + $customerInfo.address.addressLine4)
+		#end
+			
+		
+		#if($houseDetails and !$houseDetails.isEmpty())
+			<row>
+				<column align="left">$posLogHelper.escapeXMLValue($houseDetails)</column>
+			</row>	
+		#end
+		
+		#if($customerInfo.address.addressLine5 and !$customerInfo.address.addressLine5.isEmpty())
+		<row>
+			<column align="left">$posLogHelper.escapeXMLValue($customerInfo.address.addressLine5)</column>
+		</row>
+		#end
+		
+		#if( $customerInfo.address.city and !$customerInfo.address.city.isEmpty())
+		<row>
+			<column align="left">$posLogHelper.escapeXMLValue($customerInfo.address.city)</column>
+		</row>
+		#end
+		#if($customerInfo.address.postalCode and !$customerInfo.address.postalCode.isEmpty()) 
+		<row>
+			<column align="left">$posLogHelper.escapeXMLValue($customerInfo.address.postalCode)</column>
+		</row>
+		#end
+		#if($customerInfo.AccountType == 'B2B' and !$customerInfo.segment.segmentId.isEmpty() and $customerInfo.segment.segmentId != 'TP' and !$customerInfo.segment.segmentDescription.isEmpty())
+		<row>
+			<column align="center">**** $posLogHelper.escapeXMLValue($customerInfo.segment.segmentDescription) ****</column>
+		</row>
+		#end		
+		#if($customerInfo and $customerInfo.address)
+			<row type="fill" fillchar="-" />
+		#end
+ #end
+</section>
+<section name="discountCard">
+#set($discountCardDetailsList = $posLogHelper.getLineItemList($posLog.transaction.customerOrderTransaction.lineItemsList,'DiscountCard'))
+
+ 
+#if(!$discountCardDetailsList.isEmpty())
+#foreach($discountCard in $discountCardDetailsList)
+#if(('DISCOUNT_CARD' == $discountCard.discount.methodCode) and ($discountCard.cancelFlag == false))
+<row>
+<column align="center" column-width = "40%">******* DISCOUNT SALE *******</column>
+</row>
+<row column-format="%">
+<column align="left" column-width = "60%">Discount card number:</column>
+<column align="right" column-width = "40%">$discountCard.discount.cardNumber</column>
+</row>
+<row type="fill" fillchar="-" />
+#end
+#end	
+#end
+</section>
+
+
+<section name="gogw">
+<!-- GoGW card details -->
+#set($returnLineItemList= $posLogHelper.getSaleLineItemList($posLog.transaction.customerOrderTransaction.lineItemsList))
+#if(!$returnLineItemList.isEmpty())
+	#foreach($returnLineItem in $returnLineItemList)
+		#set($gogwLongDescription = $posLogHelper.escapeXMLValue($returnLineItem.returns.longDescription.value))
+		#set($gogwTenderList = $posLogHelper.getTenderLineItemList($posLog.transaction.customerOrderTransaction.lineItemsList))
+		#if($gogwTenderList and !$gogwTenderList.isEmpty())
+			#foreach($gogwTenderItem in $gogwTenderList)
+				#if($gogwTenderItem.tender.giftCard.posIdentity.POSItemID == $returnLineItem.returns.posIdentity.POSItemID and $gogwTenderItem.tender.tenderType == 'GiftCard' and $gogwTenderItem.tender.giftCard.requestType == 'Issue')
+					#set($tenderAmountValue = $gogwTenderItem.tender.amount.value)
+					#set($itemSubType = "GC")
+					#if($gogwTenderItem.tender.amount.l10nAmount)
+						#set($tenderAmount = $posLogHelper.escapeXMLValue($gogwTenderItem.tender.amount.l10nAmount))
+					#else
+						#set($tenderAmount = $posLogHelper.formatAmountWithLocale($gogwTenderItem.tender.amount.value))
+					#end
+					<row column-format="%">
+						<column align="left" column-width="80%">$gogwLongDescription</column>
+					</row>
+					<row column-format="%">
+						<column alignt="left" column-width="50%">$gogwTenderItem.tender.giftCard.cardNumber</column>
+						<column align="right" column-width="45%">$returnLineItem.returns.actualSalesUnitPrice.l10nAmount</column>
+						<column align="right" column-width="5%"></column>
+					</row>
+				#end
+			#end
+		#end
+	#end
+#end
+<!-- end of GoGW card details -->
+</section>
+
+
+#set($saleLineItemList= $posLog.transaction.customerOrderTransaction.lineItemsList)
+ 
+#if(!$saleLineItemList.isEmpty())
+	<section name="sale">
+	#foreach($item in $saleLineItemList)
+	#set($taxCode=$posLogHelper.getLineItemTaxCode($item,'VAT'))
+		#if(!$taxPrintFlag)
+			#if($taxCode.contains('1'))
+				#set($taxCodeA='')
+			#elseif ($taxCode.contains('2'))
+				#set($taxCodeA='R')
+			#elseif ($taxCode.contains('3'))
+				#set($taxCodeA='R')
+			#elseif ($taxCode.contains('4'))
+				#set($taxCodeA='Z')
+			#else
+				#set($taxCodeA='')
+			#end
+		#else
+			#set($taxCodeA=$taxCode)
+		#end
+		#if($item.cancelFlag == false and (!$item.sale.fulfilment.fulfilmentType or ($item.sale.fulfilment.fulfilmentType and $item.sale.fulfilment.stockRoomPickup == false) or (!$item.sale.fulfilment.stockRoomPickup and $item.sale.fulfilment.fulfilmentType == "TakeAway")))
+			#if($item.sale) 
+				<row column-format="%">
+			
+				#if($item.sale.quantity.unitOfMeasureCode)
+					#set($uomSales=$item.sale.quantity.unitOfMeasureCode)
+					#else
+					#set($uomSales='')
+				#end
+			
+			
+				#set($quantity = $item.sale.quantity.value)
+				#set($unitOfMeasure = $item.sale.quantity.unitOfMeasureCode)
+				#set($weightEntryFlag = $item.sale.WeightEntryRequiredFlag)
+				#set($chainofCustody = $item.sale.ChainOfCustody)
+				#set($longDescription = $posLogHelper.escapeXMLValue($item.sale.longDescription.value))
+				
+				#if($item.sale.restrictedTenderEligibleForPurchase)
+					#set($decoratingProduct = $item.sale.restrictedTenderEligibleForPurchase)
+				#else
+					#set($decoratingProduct = '')
+				#end
+				
+				#if($weightEntryFlag)
+				<column align="left" column-width="100%">$numberTool.format("#0.00",$item.sale.quantity.value)$unitOfMeasure $longDescription</column>
+				#else
+				<column align="left" column-width="15%">$numberTool.format("#0",$item.sale.quantity.value)x</column>
+					#if($item.sale.nonMerchandiseReferenceNumber)
+					<column align="left" column-width="80%">$posLogHelper.escapeXMLValue($item.sale.longDescription.value)  Reference:$item.sale.nonMerchandiseReferenceNumber</column>
+					
+					#elseif(!$decoratingProduct.isEmpty())
+					<column align="left" column-width="80%"> >$posLogHelper.escapeXMLValue($item.sale.longDescription.value)</column>
+					#else
+					<column align="left" column-width="80%">$posLogHelper.escapeXMLValue($item.sale.longDescription.value)</column>
+					#end
+				#end
+				
+				#if($chainofCustody.schemeCode)
+				<column align="right" column-width="5%">$chainofCustody.schemeCode</column>
+				#end
+			
+				</row>
+			
+				<!--Display EAN,Unit Price,Total Price and Taxcode --> 
+				<row column-format="%">
+				#set($unitPrice = $item.sale.actualSalesUnitPrice.value)
+				#set($amountList= $item.sale.itemAmounts)
+				#if(!($uomSales=="PK"))
+				<column align="left" column-width="35%">$item.sale.posIdentity.POSItemID</column>
+					#if($quantity > 1 or $quantity < 1)
+					<column align="right" column-width="30%">$posLogHelper.escapeXMLValue($item.sale.actualSalesUnitPrice.l10nAmount)</column>
+					#else
+					<column align="right" column-width="30%"></column>
+					#end
+				#else
+				<column align="left" column-width="65%">$item.sale.posIdentity.POSItemID</column>
+				#end
+			
+				#if(true == $item.priceOverrideAppliedFlag)
+					#if(!$amountList.isEmpty())
+						#foreach($amount in $amountList)
+							#if('GrossAmountAfterPriceOverride' == $amount.amountType)
+							<column align="right" column-width="30%">$amount.l10nAmount</column>
+							#end 
+						#end 
+				#end
+					
+				#else
+					#if(!$amountList.isEmpty())
+						#foreach($amount in $amountList)
+							#if('GrossAmount' == $amount.amountType)
+							<column align="right" column-width="30%">$amount.l10nAmount</column>
+							#end 
+						#end 
+					#end
+				#end
+			
+				<column align="right" column-width="5%">$taxCodeA</column>
+				</row>
+				
+			
+				
+				
+				#if($item.sale.retailPriceModifier)
+					
+					#set($priceModList = $item.sale.retailPriceModifier)
+					#foreach($priceMod in $priceModList)
+						#if('ITEM_MANUAL_DISCOUNT' == $priceMod.methodCode)
+						<!--markdown display for sale --> 
+							#set($markdownAmount = $priceMod.totalAmount.l10nAmount)
+							<row column-format="%">
+								<column align="left" column-width="10%"></column>
+								<column align="left" column-width="50%">$priceMod.reasonCode.description</column>
+								<column align="right" column-width="35%">$markdownAmount</column>
+								<column align="right" column-width="5%"></column>
+							</row>
+						
+						#elseif('PROMOTIONS' == $priceMod.methodCode)
+							<!--promotion display for sale -->
+							#set($promotionType = $priceMod.promotionID.promotionType)
+							#if($promotionType != 'TXN')	
+							#set($promotionAmount = $priceMod.totalAmount.l10nAmount)
+							<row column-format="%">
+								<column align="left" column-width="10%"></column>
+								<column align="left" column-width="50%">$posLogHelper.escapeXMLValue($priceMod.ReceiptPrintText)</column>
+								<column align="right" column-width="35%">$promotionAmount</column>
+								<column align="right" column-width="5%"></column>
+							</row>
+						#end
+					#end
+				#end
+				#set($priceModList = '')
+					
+			#end
+			<row></row>
+		</section>
+			
+		
+			<section name="returns">
+			#elseif($item.returns)
+				
+		
+				#if($item.returns.quantity.unitOfMeasureCode)
+				#set($uomSales=$item.returns.quantity.unitOfMeasureCode)
+				#else
+				#set($uomSales='')
+				#end
+			
+			
+				#set($quantity = $item.returns.quantity.value)
+				#set($unitOfMeasure = $item.returns.quantity.unitOfMeasureCode)
+				#set($weightEntryFlag = $item.returns.WeightEntryRequiredFlag)
+				#set($chainofCustody = $item.returns.ChainOfCustody)
+				#set($longDescription = $posLogHelper.escapeXMLValue($item.returns.longDescription.value))
+				
+				#if($item.returns.restrictedTenderEligibleForPurchase)
+				#set($decoratingProduct = $item.returns.restrictedTenderEligibleForPurchase)
+				#else
+				#set($decoratingProduct = '')
+				#end
+				
+				#if(!($itemSubType=="GC"))
+				<row column-format="%">
+					#if($weightEntryFlag)
+				<column align="left" column-width="100%">$numberTool.format("#0.00",$item.returns.quantity.value)$unitOfMeasure $longDescription</column>
+				#else
+				<column align="left" column-width="15%">$numberTool.format("#0",$item.returns.quantity.value)x</column>
+					#if($item.returns.nonMerchandiseReferenceNumber)
+					<column align="left" column-width="80%">$posLogHelper.escapeXMLValue($item.returns.longDescription.value)  Reference:$item.returns.nonMerchandiseReferenceNumber</column>
+					
+					#elseif(!$decoratingProduct.isEmpty())
+					<column align="left" column-width="80%"> >$posLogHelper.escapeXMLValue($item.returns.longDescription.value)</column>
+					#else
+					<column align="left" column-width="80%">$posLogHelper.escapeXMLValue($item.returns.longDescription.value)</column>
+					#end
+					#end
+				</row>
+				#end
+				
+			
+				
+			
+		<!--	Display EAN,Unit Price,Total Price and Taxcode --> 
+				#if(!($itemSubType=="GC"))
+				<row column-format="%">
+				#set($unitPrice = $item.returns.actualSalesUnitPrice.value)
+				#set($amountList= $item.returns.itemAmounts)
+				#if(!($uomSales=="PK"))
+				<column align="left" column-width="35%">$item.returns.posIdentity.POSItemID</column>
+					#if($quantity > 1 or $quantity < 1)
+					<column align="right" column-width="30%">$posLogHelper.formatAmountWithLocale($unitPrice.abs())</column>
+					#else
+					<column align="right" column-width="30%"></column>
+					#end
+				#else
+				<column align="left" column-width="65%">$item.returns.posIdentity.POSItemID</column>
+				#end
+			
+				#if(!$amountList.isEmpty())
+						#foreach($amount in $amountList)
+							#if('GrossAmountAfterPriceOverride' == $amount.amountType)
+							<column align="right" column-width="30%">$amount.l10nAmount</column>
+							#end 
+						#end 
+				#end
+			
+				<column align="right" column-width="5%">$taxCodeA</column>
+				</row>
+				#end
+				
+				
+				#if($item.returns.retailPriceModifier)
+					#set($priceModList = $item.returns.retailPriceModifier)
+					#foreach($priceMod in $priceModList)
+						#if('ITEM_MANUAL_DISCOUNT' == $priceMod.methodCode)
+						<!--markdown display for returns --> 
+							#set($markdownAmount = $priceMod.totalAmount.l10nAmount)
+							<row column-format="%">
+								<column align="left" column-width="10%"></column>
+								<column align="left" column-width="50%">$priceMod.reasonCode.description</column>
+								<column align="right" column-width="35%">$markdownAmount</column>
+								<column align="right" column-width="5%"></column>
+							</row>
+						
+						#elseif('PROMOTIONS' == $priceMod.methodCode)
+							<!--promotion display for returns -->
+							#set($promotionType = $priceMod.promotionID.promotionType)
+							#if($promotionType != 'TXN') 	
+							#set($promotionAmount = $priceMod.totalAmount.l10nAmount)
+							<row column-format="%">
+								<column align="left" column-width="10%"></column>
+								<column align="left" column-width="50%">$posLogHelper.escapeXMLValue($priceMod.ReceiptPrintText)</column>
+								<column align="right" column-width="35%">$promotionAmount</column>
+								<column align="right" column-width="5%"></column>
+							</row>
+						#end
+					#end
+				#end
+				#set($priceModList = '')
+			#end
+			<row></row>
+			</section>
+		    <section name="returnItemLoanOrder">
+			#elseif($item.returnItemLoanOrder)
+				
+				#if($item.returnItemLoanOrder.quantity.unitOfMeasureCode)
+				#set($unitOfMeasureReturnOrder=$item.returnItemLoanOrder.quantity.unitOfMeasureCode)
+				#else
+				#set($unitOfMeasureReturnOrder='')
+				#end
+				
+				#set($quantityReturnOrder = $item.returnItemLoanOrder.quantity.value)
+				#set($weightEntryFlagReturnOrder = $item.returnItemLoanOrder.WeightEntryRequiredFlag)
+				#set($chainofCustodyReturnOrder = $item.returnItemLoanOrder.ChainOfCustody)
+				#set($longDescriptionReturnOrder = $posLogHelper.escapeXMLValue($item.returnItemLoanOrder.longDescription.value))
+				
+				#if($item.returnItemLoanOrder.restrictedTenderEligibleForPurchase)
+				#set($decoratingProductReturnOrder = $item.returnItemLoanOrder.restrictedTenderEligibleForPurchase)
+				#else
+				#set($decoratingProductReturnOrder = '')
+				#end
+				
+				#set($unitPriceReturnOrder = $item.returnItemLoanOrder.actualSalesUnitPrice.value)
+				#set($amountListReturnOrder= $item.returnItemLoanOrder.itemAmounts)
+				#set($posItemIdReturnOrder= $item.returnItemLoanOrder.posIdentity.POSItemID)
+				<row column-format="%">
+				#if($weightEntryFlagReturnOrder)
+				<column align="left" column-width="100%">$numberTool.format("#0.00",$quantityReturnOrder)$unitOfMeasureReturnOrder $longDescriptionReturnOrder</column>
+				#else
+				<column align="left" column-width="15%">$numberTool.format("#0",$quantityReturnOrder)x</column>
+					#if(!$decoratingProductReturnOrder.isEmpty())
+					<column align="left" column-width="80%"> >$longDescriptionReturnOrder</column>
+					#else
+					<column align="left" column-width="80%">$longDescriptionReturnOrder</column>
+					#end
+				#end
+				</row>
+				
+				<row column-format="%">
+				#if(!($unitOfMeasureReturnOrder=="PK"))
+				<column align="left" column-width="35%">$posItemIdReturnOrder</column>
+					#if($quantityReturnOrder < -1)
+					<column align="right" column-width="30%">$posLogHelper.formatAmountWithLocale($unitPriceReturnOrder.abs())</column>
+					#else
+					<column align="right" column-width="30%"></column>
+					#end
+				#else
+				<column align="left" column-width="65%">$posItemIdReturnOrder</column>
+				#end
+			
+				#if(!$amountListReturnOrder.isEmpty())
+						#foreach($amountReturnOrder in $amountListReturnOrder)
+							#if('GrossAmountAfterPriceOverride' == $amountReturnOrder.amountType)
+							<column align="right" column-width="30%">$amountReturnOrder.l10nAmount</column>
+							#end 
+						#end 
+				#end
+			
+				<column align="right" column-width="5%">$taxCodeA</column>
+				</row>
+				
+				#if($item.returnItemLoanOrder.retailPriceModifier)
+					#set($priceModList = $item.returnItemLoanOrder.retailPriceModifier)
+					#foreach($priceMod in $priceModList)
+						#if('ITEM_MANUAL_DISCOUNT' == $priceMod.methodCode)
+							#set($markdownAmount = $priceMod.totalAmount.l10nAmount)
+								<row column-format="%">
+									<column align="left" column-width="10%"></column>
+									<column align="left" column-width="50%">$priceMod.reasonCode.description</column>
+									<column align="right" column-width="35%">$markdownAmount</column>
+									<column align="right" column-width="5%"></column>
+								</row>
+						#end
+					#end
+				#set($priceModList = '')
+				#end
+				<row></row>
+			</section>
+			<section name="loanOrder">
+			#elseif($item.loanOrder)
+				<row column-format="%">
+				<column align="left" column-width="10%">$numberTool.format("#0",$item.loanOrder.quantity.value)x</column>	
+				<column align="left" column-width="85%">$posLogHelper.escapeXMLValue($item.loanOrder.longDescription.value)</column>
+				<column align="left" column-width="5%"></column>
+				</row>
+				
+					#if($item.loanOrder.tax)
+						#set($taxCodeB=$posLogHelper.getLineItemTaxCode($item.loanOrder,'VAT'))
+							<row column-format="%">
+							<column align="left" column-width="10%"></column>
+							<column align="left" column-width="55%">$item.loanOrder.orderBarcode</column>
+							<column align="right" column-width="30%">$posLogHelper.escapeXMLValue($item.loanOrder.actualSalesUnitPrice.l10nAmount)</column>
+							<column align="right" column-width="5%">$taxCodeB</column>
+							</row>
+					#else
+					<row column-format="%">
+							<column align="left" column-width="10%"></column>
+							<column align="left" column-width="55%">$item.loanOrder.orderBarcode</column>
+							<column align="right" column-width="30%">$posLogHelper.escapeXMLValue($item.loanOrder.actualSalesUnitPrice.l10nAmount)</column>
+							<column align="right" column-width="5%"></column>
+					</row>	
+					#end
+					<row></row>
+			</section>			
+			<!-- After ATG integration loanOrder replaced by orderItem for .com+ order payment -->
+			<section name="orderItem">
+			#elseif($item.orderItem)
+				<row column-format="%">
+				<column align="left" column-width="10%">$numberTool.format("#0",$item.orderItem.quantity.value)x</column>	
+				<column align="left" column-width="85%">$posLogHelper.escapeXMLValue($item.orderItem.longDescription.value)</column>
+				<column align="left" column-width="5%"></column>
+				</row>
+				
+					#if($item.orderItem.tax)
+						#set($taxCodeB=$posLogHelper.getLineItemTaxCode($item.orderItem,'VAT'))
+							<row column-format="%">
+							<column align="left" column-width="10%"></column>
+							<column align="left" column-width="55%">$item.orderItem.orderBarcode</column>
+							<column align="right" column-width="30%">$posLogHelper.escapeXMLValue($item.orderItem.actualSalesUnitPrice.l10nAmount)</column>
+							<column align="right" column-width="5%">$taxCodeB</column>
+							</row>
+					#else
+					<row column-format="%">
+							<column align="left" column-width="10%"></column>
+							<column align="left" column-width="55%">$item.orderItem.orderBarcode</column>
+							<column align="right" column-width="30%">$posLogHelper.escapeXMLValue($item.orderItem.actualSalesUnitPrice.l10nAmount)</column>
+							<column align="right" column-width="5%"></column>
+					</row>	
+					#end
+					<row></row>
+			</section>		
+			<section name="returnLoanOrder">	
+			#elseif($item.returnLoanOrder)
+				<row column-format="%">
+				<column align="left" column-width="10%">$numberTool.format("#0",$item.returnLoanOrder.quantity.value)x</column>	
+				<column align="left" column-width="85%">$posLogHelper.escapeXMLValue($item.returnLoanOrder.longDescription.value)</column>
+				<column align="left" column-width="5%"></column>
+				</row>
+					#if($item.returnLoanOrder.tax)
+						#set($taxCodeB=$posLogHelper.getLineItemTaxCode($item,'VAT'))
+							<row column-format="%">
+							<column align="left" column-width="10%"></column>
+							<column align="left" column-width="55%">$item.returnLoanOrder.orderBarcode</column>
+							<column align="right" column-width="30%">$posLogHelper.escapeXMLValue($item.returnLoanOrder.actualSalesUnitPrice.l10nAmount)</column>
+							<column align="right" column-width="5%">$taxCodeB</column>
+							</row>
+					
+				
+					#else
+					<row column-format="%">
+							<column align="left" column-width="10%"></column>
+							<column align="left" column-width="55%">$item.returnLoanOrder.orderBarcode</column>
+							<column align="right" column-width="30%">$posLogHelper.escapeXMLValue($item.returnLoanOrder.actualSalesUnitPrice.l10nAmount)</column>
+							<column align="right" column-width="5%"></column>
+					</row>	
+					#end	
+				<row></row>
+			</section>
+				<!-- After ATG integration loanOrder replaced by orderItem for .com+ order payment -->
+			<section name="returnOrder">	
+			#elseif($item.returnOrder)
+				<row column-format="%">
+				<column align="left" column-width="10%">$numberTool.format("#0",$item.returnOrder.quantity.value)x</column>	
+				<column align="left" column-width="85%">$posLogHelper.escapeXMLValue($item.returnOrder.longDescription.value)</column>
+				<column align="left" column-width="5%"></column>
+				</row>
+					#if($item.returnOrder.tax)
+						#set($taxCodeB=$posLogHelper.getLineItemTaxCode($item,'VAT'))
+							<row column-format="%">
+							<column align="left" column-width="10%"></column>
+							<column align="left" column-width="55%">$item.returnOrder.orderBarcode</column>
+							<column align="right" column-width="30%">$posLogHelper.escapeXMLValue($item.returnOrder.actualSalesUnitPrice.l10nAmount)</column>
+							<column align="right" column-width="5%">$taxCodeB</column>
+							</row>
+					#else
+					<row column-format="%">
+							<column align="left" column-width="10%"></column>
+							<column align="left" column-width="55%">$item.returnOrder.orderBarcode</column>
+							<column align="right" column-width="30%">$posLogHelper.escapeXMLValue($item.returnOrder.actualSalesUnitPrice.l10nAmount)</column>
+							<column align="right" column-width="5%"></column>
+					</row>	
+					#end	
+				<row></row>
+			<!--Giftcard display -->
+			</section>
+			<section name="giftcardsale">
+			#elseif($item.saleOfGiftCard)	
+				<row column-format="%">
+					<column align="left" column-width="15%">$numberTool.format("#0",$item.saleOfGiftCard.quantity.value)x</column>
+					<column align="left" column-width="80%">$item.saleOfGiftCard.longDescription.value</column>
+					<column align="left" column-width="5%"></column>
+				</row>		
+				<row column-format="%">			
+					<column align="left" column-width="65%">($item.saleOfGiftCard.cardNumber)</column>
+					<column align="right" column-width="30%">$posLogHelper.escapeXMLValue($item.saleOfGiftCard.extendedAmount.l10nAmount)</column>
+					<column align="right" column-width="5%">$taxCodeA</column>
+				</row>
+				<row></row>
+				
+			
+			#elseif($item.storedValueFundBase)	
+				<row column-format="%">
+					<column align="left" column-width="14%">$numberTool.format("#0",$item.storedValueFundBase.quantity.value)x</column>
+					<column align="left" column-width="80%">$posLogHelper.escapeXMLValue($item.storedValueFundBase.longDescription.value)</column>
+				</row>
+				<row column-format="%">			
+					<column align="left" column-width="65%">($item.storedValueFundBase.account.accountNumber)</column>
+					<column align="right" column-width="30%">$posLogHelper.escapeXMLValue($item.storedValueFundBase.extendedAmount.l10nAmount)</column>
+					<column align="right" column-width="5%">$taxCodeA</column>		
+				</row>		
+				<row></row>
+			
+			#end		
+		#end 
+		<!--End of takeaway item display Condition -->
+	#end 
+	<!-- end of for loop -->
+	<!-- start disp;ay of pickup items -->
+	
+	<!-- end of for loop disp;ay of pickup items -->
+	</section>
+	
+	<section name="pickupItems">
+	#set($collectionNumber= $posLog.transaction.customerOrderTransaction.cartIdentifier)
+	#foreach($iteminBasket in $saleLineItemList)
+		#if($iteminBasket.cancelFlag == false and $iteminBasket.sale.fulfilment.fulfilmentType and $iteminBasket.sale.fulfilment.stockRoomPickup == true)
+			#set($hasPickupItems = true)
+		#end
+	#end
+	#if($collectionNumber and !$collectionNumber.isEmpty() and $hasPickupItems == true) 
+		<row>
+		<column font-weight="bold" font-size="large" align = "right" >*Collection*</column>
+		</row>
+		<row>
+		<column font-weight="bold" font-size="large" align = "right" >Number $collectionNumber</column>
+		</row>
+		<row></row>
+		<row>
+			<column align="left">Collection Items</column>
+		</row>
+	#end
+	
+	#foreach($pickupitem in $saleLineItemList)
+		#set($taxCodePickup=$posLogHelper.getLineItemTaxCode($pickupitem,'VAT'))
+		#if(!$taxPrintFlag)
+			#if($taxCodePickup.contains('1'))
+				#set($taxCodeB='')
+			#elseif ($taxCodePickup.contains('2'))
+				#set($taxCodeB='R')
+			#elseif ($taxCodePickup.contains('3'))
+				#set($taxCodeB='R')
+			#elseif ($taxCodePickup.contains('4'))
+				#set($taxCodeB='Z')
+			#else
+				#set($taxCodeA='')
+			#end
+		#else
+			#set($taxCodeB=$taxCodePickup)
+		#end
+		#if($pickupitem.cancelFlag == false and $pickupitem.sale.fulfilment.fulfilmentType and $pickupitem.sale.fulfilment.stockRoomPickup == true)
+					
+			#if($pickupitem.sale)
+			<row column-format="%">
+				#if($pickupitem.sale.quantity.unitOfMeasureCode)
+					#set($uomSales=$pickupitem.sale.quantity.unitOfMeasureCode)
+					#else
+					#set($uomSales='')
+				#end
+			
+			
+				#set($quantity = $pickupitem.sale.quantity.value)
+				#set($unitOfMeasure = $pickupitem.sale.quantity.unitOfMeasureCode)
+				#set($weightEntryFlag = $pickupitem.sale.WeightEntryRequiredFlag)
+				#set($chainofCustody = $pickupitem.sale.ChainOfCustody)
+				#set($longDescription = $posLogHelper.escapeXMLValue($pickupitem.sale.longDescription.value))
+				
+				#if($pickupitem.sale.restrictedTenderEligibleForPurchase)
+					#set($decoratingProduct = $pickupitem.sale.restrictedTenderEligibleForPurchase)
+				#else
+					#set($decoratingProduct = '')
+				#end
+				
+				#if($weightEntryFlag)
+				<column align="left" column-width="100%">$numberTool.format("#0.00",$pickupitem.sale.quantity.value)$unitOfMeasure $longDescription</column>
+				#else
+				<column align="left" column-width="15%">$numberTool.format("#0",$pickupitem.sale.quantity.value)x</column>
+					#if($pickupitem.sale.nonMerchandiseReferenceNumber)
+					<column align="left" column-width="80%">$posLogHelper.escapeXMLValue($pickupitem.sale.longDescription.value)  Reference:$pickupitem.sale.nonMerchandiseReferenceNumber</column>
+					
+					#elseif(!$decoratingProduct.isEmpty())
+					<column align="left" column-width="80%"> >$posLogHelper.escapeXMLValue($pickupitem.sale.longDescription.value)</column>
+					#else
+					<column align="left" column-width="80%">$posLogHelper.escapeXMLValue($pickupitem.sale.longDescription.value)</column>
+					#end
+				#end
+				
+				#if($chainofCustody.schemeCode)
+				<column align="right" column-width="5%">$chainofCustody.schemeCode</column>
+				#end
+			</row>
+			<!--Display EAN,Unit Price,Total Price and Taxcode --> 
+			<row column-format="%">
+				#set($unitPrice = $pickupitem.sale.actualSalesUnitPrice.value)
+				#set($amountList= $pickupitem.sale.itemAmounts)
+				#if(!($uomSales=="PK"))
+				<column align="left" column-width="35%">$pickupitem.sale.posIdentity.POSItemID</column>
+					#if($quantity > 1 or $quantity < 1)
+					<column align="right" column-width="30%">$posLogHelper.escapeXMLValue($pickupitem.sale.actualSalesUnitPrice.l10nAmount)</column>
+					#else
+					<column align="right" column-width="30%"></column>
+					#end
+				#else
+				<column align="left" column-width="65%">$pickupitem.sale.posIdentity.POSItemID</column>
+				#end
+			
+				#if(true == $pickupitem.priceOverrideAppliedFlag)
+					#if(!$amountList.isEmpty())
+						#foreach($amount in $amountList)
+							#if('GrossAmountAfterPriceOverride' == $amount.amountType)
+							<column align="right" column-width="30%">$amount.l10nAmount</column>
+							#end 
+						#end 
+					#end
+					
+				#else
+					#if(!$amountList.isEmpty())
+						#foreach($amount in $amountList)
+							#if('GrossAmount' == $amount.amountType)
+							<column align="right" column-width="30%">$amount.l10nAmount</column>
+							#end 
+						#end 
+					#end
+				#end
+			
+				<column align="right" column-width="5%">$taxCodeB</column>
+			</row>
+			#if($pickupitem.sale.retailPriceModifier)
+			#set($priceModList = $pickupitem.sale.retailPriceModifier)
+				#foreach($priceMod in $priceModList)
+					#if('ITEM_MANUAL_DISCOUNT' == $priceMod.methodCode)
+						<!--markdown display for pickup --> 
+						#set($markdownAmount = $priceMod.totalAmount.l10nAmount)
+						<row column-format="%">
+							<column align="left" column-width="10%"></column>
+							<column align="left" column-width="50%">$priceMod.reasonCode.description</column>
+							<column align="right" column-width="35%">$markdownAmount</column>
+							<column align="right" column-width="5%"></column>
+						</row>
+					#elseif('PROMOTIONS' == $priceMod.methodCode)
+							<!--promotion display for pickup -->
+						#set($promotionType = $priceMod.promotionID.promotionType)
+							#if($promotionType != 'TXN')	
+							#set($promotionAmount = $priceMod.totalAmount.l10nAmount)
+							<row column-format="%">
+								<column align="left" column-width="10%"></column>
+								<column align="left" column-width="50%">$posLogHelper.escapeXMLValue($priceMod.ReceiptPrintText)</column>
+								<column align="right" column-width="35%">$promotionAmount</column>
+								<column align="right" column-width="5%"></column>
+							</row>
+							#end
+					#end		
+				#end
+			#end
+			<!-- end of pickupitem sale -->
+			#end
+		<row></row>
+			
+		#end
+		<!-- end of for display of pickup items -->
+	#end
+	</section>
+#end
+<!-- #set($loanOderLineItemList= $posLogHelper.getLineItemList($posLog.transaction.customerOrderTransaction.lineItemsList,'LoanOrder'))
+#if(!$loanOderLineItemList.isEmpty())
+ 
+<section name="loanOrder">
+	#foreach ($loanOderLineItem in $loanOderLineItemList)
+		<row>
+			<column align="left">SAPCO Payment</column>
+			<column align="right">$posLogHelper.getTransactionTotal($posLog.transaction.customerOrderTransaction.totalsList,'TransactionLoanTenderedAmount').l10nAmount</column>
+		</row>
+		<row>
+			<column align="left">SAPCO Number:</column>
+			<column align="right">$loanOderLineItem.loanOrder.posIdentity.POSItemID</column>
+		</row>
+	#end
+</section>
+#end -->
+
+<!-- Display total item counts,price starts --> 
+#if($posLog.transaction.customerOrderTransaction.totalsList)
+	<section name="saving">
+
+	#set($totalDiscountAmount=$posLogHelper.getTransactionTotalAmount($posLog.transaction.customerOrderTransaction.totalsList,'TotalDiscountAmount'))
+	#set($totalSavingsAmount=$posLogHelper.getTransactionTotalAmount($posLog.transaction.customerOrderTransaction.totalsList,'TransactionSavingsAmount'))
+	#set($grandTotalDiscountAmount=$totalDiscountAmount+$totalSavingsAmount)
+
+	</section> 
+	#if($posLog.transaction.customerOrderTransaction.itemCount)
+		#set($itemCount = $posLog.transaction.customerOrderTransaction.itemCount)
+	#else
+		#set($itemCount = 0)
+	#end
+	<section name="total">
+	<row>
+		<column align="left">$posLog.transaction.customerOrderTransaction.TotalItemCount Item(s)</column>
+	</row>
+	<row></row>
+     <!-- Header level promotions start-->
+	 #set( $promotionList = $posLog.transaction.customerOrderTransaction.promotionSavingsSummary.savingsList)
+		#foreach ($promotion in $promotionList)
+			#if("TXN" == $promotion.promotionType)
+				<row column-format="%">
+					<column align="left" column-width="50%">$promotion.operatorDisplayText</column>
+					<column align="right" column-width="45%">$promotion.promotionSavings.l10nAmount</column>
+					<column align="right" column-width="5%"></column>
+				</row>		
+			#end
+		#end
+		
+     	#set($discountCardDetailsList = $posLogHelper.getLineItemList($posLog.transaction.customerOrderTransaction.lineItemsList,'DiscountCard'))
+		#if(!$discountCardDetailsList.isEmpty())
+			#foreach($discountDetail in $discountCardDetailsList)
+				#if($discountDetail.cancelFlag == false)
+				#set($discountAmount = $discountDetail.discount.totalAmount.l10nAmount)
+				#set($discountMethodCode = $discountDetail.discount.methodCode)
+					#if(('DISCOUNT_CARD' == $discountMethodCode))
+					#set($discountCardDescription = ($discountDetail.discount.receiptPrintText))
+					<row column-format="%">
+					<column align="left" column-width="50%">$posLogHelper.escapeXMLValue($discountCardDescription)</column>
+					<column align="right" column-width="45%">$discountAmount</column>
+					<column align="right" column-width="5%"></column>
+					</row>
+					#end
+				#end
+			#end
+			<row></row>
+		#end
+
+	 <!-- Header level promotions end-->
+	<row column-format="%">
+	#set($totalExpense = $posLogHelper.getTransactionTotal($posLog.transaction.customerOrderTransaction.totalsList,'GrandTotalAmount').l10nAmount)
+	#set($totalExpenseInteger = $posLogHelper.getTransactionTotal($posLog.transaction.customerOrderTransaction.totalsList,'GrandTotalAmount').value)
+		<column align="left" column-width="50%">TOTAL</column>
+		<column align="right" column-width="45%">$totalExpense</column>
+		<column align="right" column-width="5%"></column>
+	</row>
+	</section>
+#end
+<!-- Display total item counts,price ends -->
+
+<!--Display all payment details starts -->
+
+<section name="payment">
+#set($tenderLineItemList = $posLogHelper.getTenderLineItemList($posLog.transaction.customerOrderTransaction.lineItemsList))
+	#if($tenderLineItemList and !$tenderLineItemList.isEmpty())
+	<row></row>
+		#set($paymentType = $posLogHelper.getTransactionTotal($posLog.transaction.customerOrderTransaction.totalsList,'GrandTotalAmount').typeCode)
+		#foreach($tenderLineItem in $tenderLineItemList)
+		#set($tenderAmountValue = $tenderLineItem.tender.amount.value)
+			#if($tenderLineItem.tender.amount.l10nAmount)
+				#set($tenderAmount = $posLogHelper.escapeXMLValue($tenderLineItem.tender.amount.l10nAmount))
+			#else
+				#set($tenderAmount = $posLogHelper.formatAmountWithLocale($tenderLineItem.tender.amount.value))
+			#end		
+			<row column-format="%">
+				#if($tenderLineItem.tender.tenderDescription and $tenderLineItem.tender.tenderDescription.value!='')				
+					#set($tenderDescription = $tenderLineItem.tender.tenderDescription.value)
+					#if($tenderLineItem.tender.tenderType == 'CreditDebit' and $tenderLineItem.tender.typeCode == 'Sale')
+						#set($tenderDescription = $tenderDescription+ ' sale')
+					#elseif($tenderLineItem.tender.tenderType == 'CreditDebit' and $tenderLineItem.tender.typeCode == 'Return')
+						#set($tenderDescription = $tenderDescription+ ' refund')
+					#elseif($tenderLineItem.tender.tenderType == 'Voucher')
+						#set($tenderDescription = $tenderLineItem.tender.subTenderDescription.value)					
+					#elseif($tenderLineItem.tender.tenderType == 'GiftCard' and $tenderLineItem.tender.subTenderDescription)
+						#set($tenderDescription = $tenderLineItem.tender.subTenderDescription.value)
+					#end	
+					<column align="left" column-width="50%">$posLogHelper.escapeXMLValue($tenderDescription)</column>					
+				#end
+				  #set($paymentTypeCode = $tenderLineItem.tender.typeCode)	
+				  #if($paymentTypeCode != 'Return')
+				  <column align="right" column-width="45%">-$tenderAmount</column>
+				  #else
+				  <column align="right" column-width="45%">$tenderAmount</column>
+				  #end
+				  <column align="right" column-width="5%"></column>
+			</row>
+			
+			#if($tenderLineItem.tender.tenderType == 'CreditDebit' and $tenderLineItem.extensionData)					
+				<row>
+					<column align="left" column-width="70%">$tenderLineItem.extensionData.get("response").get('CrPAN')</column>
+				</row>
+			#end
+			#if(($tenderLineItem.tender.purchaseOrderNumber) and !($tenderLineItem.tender.purchaseOrderNumber.isEmpty()))
+				<row>
+					<column align="left" column-width="70%">Purchase order: $tenderLineItem.tender.purchaseOrderNumber</column>
+				</row>
+			#end
+			#if(($tenderLineItem.tender.costCentre) and !($tenderLineItem.tender.costCentre.isEmpty()))
+				<row>
+					<column align="left" column-width="70%">Cost centre: $tenderLineItem.tender.costCentre</column>
+				</row>
+			#end
+			#if(($tenderLineItem.tender.generalReference) and !($tenderLineItem.tender.generalReference.isEmpty()))
+				<row>
+					<column align="left" column-width="70%">General reference: $tenderLineItem.tender.generalReference</column>
+				</row>
+			#end
+			#if($tenderLineItem.tender.giftCard)
+				<row column-format="%">
+					<column align="left" column-width="50%">Number:</column>
+					<column alignt="right" column-width="50%">$tenderLineItem.tender.giftCard.cardNumber</column>
+					<column alignt="right" column-width="5%"></column>
+				</row>	
+				#if($tenderLineItem.tender.giftCard.currentBalance)
+					#if($tenderLineItem.tender.giftCard.currentBalance.l10nAmount)
+						#set($gcBalanceAmount = $posLogHelper.escapeXMLValue($tenderLineItem.tender.giftCard.currentBalance.l10nAmount))
+					#else
+						#set($gcBalanceAmount = $posLogHelper.formatAmountWithLocale($tenderLineItem.tender.giftCard.currentBalance.value))
+					#end
+				#end
+				#if($gcBalanceAmount)
+				<row column-format="%">							
+					<column align="left" column-width="50%">Remaining Balance:</column>
+					<column align="left" column-width="52%">$gcBalanceAmount</column>
+				</row>
+				#end
+				#if($tenderLineItem.tender.giftCard.expirationDate)
+				<row column-format="%">
+					<column align="left" column-width="28%">Expiry Date:</column>
+					<column alignt="left" column-width="72%">$posLogHelper.formatDate($tenderLineItem.tender.giftCard.expirationDate)</column>
+				</row>	
+				#end				
+			#elseif($tenderLineItem.tender.Cheque)			
+				#if($tenderLineItem.tender.authorization)				
+				#foreach($authorizationCheck in $tenderLineItem.tender.authorization)
+					<row>
+						<column align="left">Auth Code::$authorizationCheck.authorizationCode</column>
+					</row>
+				#end
+				#end
+				<row>
+					<column align="left">Cheque $posLogHelper.escapeXMLValue('#'):$tenderLineItem.tender.Cheque.checkNumber</column>
+				</row>		
+				
+				#set($checkOverPayment=$posLogHelper.getTransactionTotal($posLog.transaction.customerOrderTransaction.totalsList,'OverIncomeAmount'))
+				#if($checkOverPayment)
+				<row>
+					<column align="left">$checkOverPayment.incomeCode</column>
+				</row>
+				#end			
+			#elseif($tenderLineItem.tender.voucher)			
+				#if('GiftCertificate' == $tenderLineItem.tender.tenderType)
+				<row>
+					<column align="left">Cert. $posLogHelper.escapeXMLValue('#'):$tenderLineItem.tender.voucher.serialNumber</column>
+				</row>	
+				#elseif('StoreVoucher' == $tenderLineItem.tender.tenderType )
+				<row>
+					<column align="left">Store Credit $posLogHelper.escapeXMLValue('#'):$tenderLineItem.tender.voucher.serialNumber</column>
+				</row>
+				#elseif('StoreVoucher' == $tenderLineItem.tender.tenderType)
+				<row>
+					<column align="left">Store Credit $posLogHelper.escapeXMLValue('#'):$tenderLineItem.tender.voucher.serialNumber</column>
+				</row>
+				#end
+			#elseif($tenderLineItem.tender.coupon)
+				<row>
+					<column align="left">Coupon $posLogHelper.escapeXMLValue('#'):$tenderLineItem.tender.coupon.manufacturerID</column>
+				</row>
+			#end
+			
+			
+			#if( 'Loyalty' == $tenderLineItem.tender.tenderType)
+				<row>
+					<column align="left">Loyalty Acc. $posLogHelper.escapeXMLValue('#'):$posLog.transaction.retailTransaction.loyaltyAccount.loyaltyAccount.loyaltyAccountID.value</column>
+				</row>
+				<row>
+					<column align="left">Available Balance :$posLogHelper.getBalanceDueAmountInLoyalty($posLogHelper.getTotalPointsInLoyalty($posLog.transaction.retailTransaction.loyaltyAccount.loyaltyAccount.points,'Balance'),$tenderLineItem.tender.amount.value)</column>
+				</row>
+			#end
+			
+			
+		#end
+		#foreach($lineItem in $posLog.transaction.customerOrderTransaction.lineItemsList)
+			#if(!$lineItem.cancelFlag and $lineItem.tenderChange)
+				#set($changeLineItem = $lineItem.tenderChange)
+			#end
+		#end
+		#set($tenderChangeDueAmount = ($posLogHelper.getTransactionTotal($posLog.transaction.customerOrderTransaction.totalsList,'TransactionChangeDue').l10nAmount))
+		#if($changeLineItem.amount.value > 0)
+		<row column-format="%">
+			#if($changeLineItem)
+			<column align="left" column-width="70%">$changeLineItem.tenderDescription.value</column>
+			#else
+			<column align="left" column-width="70%">$posLogHelper.getTransactionTotal($posLog.transaction.customerOrderTransaction.totalsList,'TransactionChangeDue').tenderType</column>
+			#end
+			<column align="right" column-width="25%">$posLogHelper.getTransactionTotal($posLog.transaction.customerOrderTransaction.totalsList,'TransactionChangeDue').l10nAmount</column>
+			<column align="right" column-width="5%"></column>
+		</row>
+		#end
+		
+		<!--Display change not issued note start -->
+		#foreach($totalItem in $posLog.transaction.customerOrderTransaction.totalsList)
+			#if($totalItem.totalType == 'OverIncomeAmount')
+			<row></row>
+					<row column-format="%">
+					<column align="center" column-width="70%">$totalItem.incomeCode</column>
+					</row>
+			#end
+		#end
+		<!--Display change not issued note end -->
+		
+	 #set($totalDiscountAmount=$posLogHelper.getTransactionTotalAmount($posLog.transaction.customerOrderTransaction.totalsList,'TotalDiscountAmount'))
+        #set($totalSavingsAmount=$posLogHelper.getTransactionTotalAmount($posLog.transaction.customerOrderTransaction.totalsList,'TransactionSavingsAmount'))
+        #set($grandTotalDiscountAmount=$totalSavingsAmount)
+     
+	 #if($paymentType != 'Refund' and $grandTotalDiscountAmount.abs() >0)
+	 <row></row>
+    <row column-format="%">
+		<column align="left" column-width="50%">You have saved</column>
+		<column align="right" column-width="45%">$posLogHelper.formatAmountWithLocale($grandTotalDiscountAmount)</column>
+		<column align="right" column-width="5%"></column>
+    </row>
+	#end
+#end
+<row type="fill" fillchar="-" />
+
+</section>
+<!--Display all payment details ends -->
+<!-- Display the card extension data in the poslog in the receipts starts-->
+<section name="payment-extensionData">
+#foreach ($tenderLineItem in $posLogHelper.getLineItemListByTender($posLog.transaction.customerOrderTransaction.lineItemsList,'CreditDebit'))
+	#if($tenderLineItem.extensionData)
+		#set ($extensionDataMap = $tenderLineItem.extensionData)
+		#foreach ($key in $extensionDataMap.keySet())
+			#if("response" == $key)
+				#set ($responseDataMap = $extensionDataMap.get($key))
+				#if(!("DECLINED" == $responseDataMap.get('CrCVM')))
+				
+					#if($responseDataMap.get('CrCardScheme'))
+						#set($cardName = $responseDataMap.get('CrCardScheme'))
+					#else
+						#set($cardName = '')
+					#end
+					
+					#if($responseDataMap.get('CrCaptureMethod'))
+						#set($captureMethod = $responseDataMap.get('CrCaptureMethod'))
+					#else
+						#set($captureMethod = '')
+					#end
+					
+					<row column-format="%">
+						<column align="left" column-width="60%">$cardName</column>	
+						<column align="right" column-width="40%">$captureMethod</column>
+					</row>
+					
+                    <row>
+						<column align="left" >Number:</column>
+						<column align="left" >$responseDataMap.get('CrPAN')</column>
+					</row>
+					
+					<row>
+						<column align="left">Auth Code:</column>
+						<column align="left" column-width="60%">$responseDataMap.get('CrAuthCode')</column>
+					</row>
+					
+					#if(!("" == $responseDataMap.get('CrAID')))
+						<row>
+							<column align="left">AID:</column>
+							<column align="left">$responseDataMap.get('CrAID')</column>
+						</row>
+						<row>
+							<column align="left">App Date:</column>
+							<column align="left">$responseDataMap.get('CrAppEff')</column>
+						</row>
+						#if($responseDataMap.get('CrAppSeq'))
+							#set($appSeq = $responseDataMap.get('CrAppSeq'))
+						#else
+							#set($appSeq = '')
+						#end
+						
+						#if($responseDataMap.get('issueNo'))
+							#set($issueNo = $responseDataMap.get('issueNo'))
+						#else
+							#set($issueNo = '')
+						#end
+						
+						<row>
+							<column align="left">App Seq No: $appSeq</column>
+							<column align="left">Issue: $issueNo</column>
+						</row>
+				
+					#end
+					
+					<row >
+						<column align="left">Merchant ID:</column>
+						<column align="left">$responseDataMap.get('CrMID')</column>
+					</row>
+					<row>
+						<column align="left">Terminal ID:</column>
+						<column align="left" >$responseDataMap.get('CrTID')</column>
+					</row>
+					<row>
+						<column align="left">Permanent TID:</column>
+						<column align="left">$responseDataMap.get('CrPTID')</column>
+					</row>
+					<row>
+						<column align="left">Reference:</column>
+						<column align="left" >$responseDataMap.get('CrReference')</column>
+					</row>
+					<row></row>
+					<row>
+						<column align="left">$responseDataMap.get('CrCreditDebitMessage')</column>
+					</row>
+					<row></row>
+					<row>
+					<column align="center">$responseDataMap.get('CrCVM')</column>
+					</row>
+					
+					<row type="fill" fillchar="-" />
+					
+				#end
+			#end
+		#end
+	#end
+#end
+ 
+ 
+    
+</section>
+<!-- Display the card extension data in the poslog in the receipts ends-->
+
+#set($chainofCustodys=$posLogHelper.filterChainOfCustodyData($posLog.transaction.customerOrderTransaction.lineItemsList))
+#if(!$chainofCustodys.isEmpty())
+#foreach($chainofCustody in $chainofCustodys)
+<section name="coc">
+ 
+<row column-format="%">
+	<column align="left" column-width="10%">$chainofCustody.schemeCode</column>
+	#if($chainofCustody.schemeCode =='F') 
+		<column align="left" column-width="90%">-FSC Mix 70% $chainofCustody.certificationNumber</column>
+	#else 
+		<column align="left" column-width="90%">-70% PEFC CERTIFIED $chainofCustody.certificationNumber</column>
+	#end
+</row>
+<row></row>
+</section>
+#end
+#end
+
+
+#if($taxPrintFlag)
+	
+	#if(!$posLogHelper.getSaleLineItemList($posLog.transaction.customerOrderTransaction.lineItemsList).isEmpty())
+
+<!-- Display tax details starts-->
+	#if ($posLog.transaction.customerOrderTransaction.taxSummary.taxSummaryGroups) 
+	#set ($taxSummary = $posLog.transaction.customerOrderTransaction.taxSummary.taxSummaryGroups) 
+	#if ($taxSummary) 
+		<section name="tax">
+			<row>
+				<column align="left">VAT Analysis</column>
+			</row>
+		
+			<row column-format="%">
+				<column align="left" column-width="5%"></column>
+				<column align="left" column-width="25%">Rate</column>
+				<column align="right" column-width="20%">Goods($currencySign)</column>
+				<column align="right" column-width="25%">VAT($currencySign)</column>
+				<column align="right" column-width="25%">Total($currencySign)</column>
+			</row>
+			#foreach ($taxSummaryGroup in $taxSummary) 
+				<row column-format="%"> 
+                    			#if($taxSummaryGroup.producTaxClassificationCode == 0)
+						<column align="left" column-width="30%">$taxSummaryGroup.producTaxClassificationCode Exempt</column> 
+					#else
+                    				<column align="left" column-width="30%">$taxSummaryGroup.producTaxClassificationCode $numberTool.format("#0",$taxSummaryGroup.percent)% Rated</column> 
+					#end
+                    <column align="right" column-width="20%">$taxSummaryGroup.taxableAmountWithoutTax.value</column> 
+                    <column align="right" column-width="25%">$taxSummaryGroup.amount.value</column> 
+                    <column align="right" column-width="25%">$taxSummaryGroup.taxableAmount.value</column> 
+            </row> 
+            #end  
+			#end		
+	#if($posLog.transaction.taxRegistrationDetails and !$vatMap.isEmpty())		
+		<row></row>
+		
+		<row>
+			<column align="center">VAT Number : $posLogHelper.escapeXMLValue($posLog.transaction.taxRegistrationDetails.taxRegistrationNumber)</column>
+		</row>
+		
+		#if($posLog.transaction.taxRegistrationDetails.taxRegisteredCompanyName)
+			#set($vatTaxRegisteredCompanyName = $posLog.transaction.taxRegistrationDetails.taxRegisteredCompanyName)
+		#else
+			#set($vatTaxRegisteredCompanyName = '')
+		#end				
+		
+		#if($posLog.transaction.taxRegistrationDetails.taxRegisteredAddress)
+			#set($vatAddress = $posLog.transaction.taxRegistrationDetails.taxRegisteredAddress)
+		
+			#if($vatAddress.addressLine1)
+				<row>
+					<column align="center">$posLogHelper.escapeXMLValue($vatTaxRegisteredCompanyName), $posLogHelper.escapeXMLValue($vatAddress.addressLine1),</column>
+				</row>	
+			#end
+			
+			#if($vatAddress.addressLine2)
+				#set($vatAddressLine2 = $vatAddress.addressLine2+', ')
+			#else
+				#set($vatAddressLine2 = '')
+			#end
+			
+			#if($vatAddress.addressLine3)
+				#set($vatAddressLine3 = $vatAddress.addressLine3+', ')
+			#else
+				#set($vatAddressLine3 = '')
+			#end
+			
+			#if($vatAddress.addressLine4)
+				#set($vatAddressLine4 = $vatAddress.addressLine4+', ')
+			#else
+				#set($vatAddressLine4 = '')
+			#end
+			
+			#if($vatAddress.postalCodeID)
+				#set($vatpostalCodeID = $vatAddress.postalCodeID)
+			#else
+				#set($vatpostalCodeID = '')
+			#end
+			
+			#if($vatAddressLine2 != '' || $vatAddressLine3 != '')
+				#set($addressData = $posLogHelper.escapeXMLValue($vatAddressLine2)+$posLogHelper.escapeXMLValue($vatAddressLine3))
+				#if($vatAddressLine4 == '')
+					#set($addressData = $addressData+$vatpostalCodeID)					
+				#end
+				<row>
+					<column align="center">$addressData</column>
+				</row>	
+			#end
+			
+			#if($vatAddressLine4 != '')
+				<row>
+					<column align="center">$posLogHelper.escapeXMLValue($vatAddressLine4)$posLogHelper.escapeXMLValue($vatpostalCodeID)</column>
+				</row>
+			#end
+		#end	
+<row type="fill" fillchar="-" />
+	#end
+</section> 
+<!-- Display tax details ends-->
+#end
+#end
+#end
+</POSLog>
